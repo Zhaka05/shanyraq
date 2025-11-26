@@ -3,15 +3,19 @@ from fastapi.responses import Response
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 
+# repository
+from app.user_repository import UserRepo, UserCreate, User
+
+#database
+from .database import Base, SessionLocal, engine
+
+Base.metadata.create_all(bind=engine) # for creation of all tables
+
 # database
-from .database import SessionLocal
 from sqlalchemy.orm import Session
 
-# repository
-from user_repository import UserRepo, UserCreate
-users_repo = UserRepo()
-
 app = FastAPI()
+users_repo = UserRepo()
 
 oauth2 = OAuth2PasswordBearer(tokenUrl="")
 
