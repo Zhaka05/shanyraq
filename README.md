@@ -1,5 +1,4 @@
 # Project Shanyraq.kz | MVP Announcements
-![alt text](image.png)
 
 MVP marketplace for housing posts
 
