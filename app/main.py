@@ -1,11 +1,12 @@
 from fastapi import FastAPI, Form, Depends, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from jose import jwt
 
 # repository
 from app.user_repository import UserRepo, UserCreate, User, UserUpdate
+from app.post_repository import PostRepo, PostCreate, Post
 
 #database
 from .database import Base, SessionLocal, engine
@@ -17,6 +18,7 @@ from sqlalchemy.orm import Session
 
 app = FastAPI()
 users_repo = UserRepo()
+posts_repo = PostRepo()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/users/login")
 
@@ -76,3 +78,41 @@ def patch_me(
     user_id = decode_access_token(token)
     users_repo.update_user_info(db, user_id, UserUpdate(phone=user_update.phone, name=user_update.name, city=user_update.city))
     return Response(status_code=200)
+
+class UserGetResponse(BaseModel):
+    id: int
+    username: str
+    phone: str
+    password: str
+    name: str
+    city: str
+
+
+@app.get("/auth/users/me", response_model=UserGetResponse)
+def get_me(
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    user_id = int(decode_access_token(token))
+    user = users_repo.get_user_by_id(db, int(user_id))
+    return UserGetResponse(id=user.id, username=user.username, phone=user.phone, password=user.password, name=user.name, city=user.city)
+
+class PostAnnouncementRequest(BaseModel):
+    type: str
+    price: int
+    address: str
+    area: float
+    rooms_count: int
+    description: str
+
+
+@app.post("/shanyraks/")
+def post_announcement(
+    post_announcement: PostAnnouncementRequest,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    user_id = decode_access_token(token)
+    post_create = PostCreate(type=post_announcement.type, price=post_announcement.price, address=post_announcement.address, area=post_announcement.area, rooms_count=post_announcement.rooms_count, description=post_announcement.description)
+    new_post = posts_repo.add_post(db, post_create, owner_id=int(user_id))
+    return JSONResponse(content={"id": new_post.id}, status_code=200)

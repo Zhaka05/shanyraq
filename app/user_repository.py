@@ -1,7 +1,9 @@
 from sqlalchemy import Column, Boolean, ForeignKey, Integer, String
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, relationship
 from attrs import define
 from .database import Base
+
+from app.post_repository import Post
 
 class User(Base):
     __tablename__ = "users"
@@ -12,6 +14,9 @@ class User(Base):
     password = Column(String)
     name = Column(String)
     city = Column(String)
+    
+    posts = relationship("Post", back_populates="owner")
+
 
 @define
 class UserCreate:
