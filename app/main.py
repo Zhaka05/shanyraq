@@ -116,3 +116,33 @@ def post_announcement(
     post_create = PostCreate(type=post_announcement.type, price=post_announcement.price, address=post_announcement.address, area=post_announcement.area, rooms_count=post_announcement.rooms_count, description=post_announcement.description)
     new_post = posts_repo.add_post(db, post_create, owner_id=int(user_id))
     return JSONResponse(content={"id": new_post.id}, status_code=200)
+
+class AnnouncementGetResponse(BaseModel):
+    id: int
+    type: str
+    price: int
+    address: str
+    area: float
+    rooms_count: int
+    description: str
+    owner_id: int
+
+@app.get("/shanyraks/{id}", response_model=AnnouncementGetResponse)
+def get_announcement(
+    id: int,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    post = posts_repo.get_post_by_id(db, id)
+    if not post:
+        return HTTPException(status_code=404, detail={"error_message": "Post Not Found"})
+    return AnnouncementGetResponse(
+        id=post.id,
+        type=post.type,
+        price=post.price,
+        address=post.address,
+        area=post.area,
+        rooms_count=post.rooms_count,
+        description=post.description,
+        owner_id=post.owner_id,
+    )
