@@ -20,16 +20,7 @@ class Post(Base):
 
 
 @define
-class PostCreate:
-    type: str
-    price: int
-    address: str
-    area: float
-    rooms_count: int
-    description: str
-
-@define
-class PostUpdate:
+class PostAttrs:
     type: str
     price: int
     address: str
@@ -56,7 +47,7 @@ class PostRepo:
     # def get_user_by_username(self, db: Session, username: str) -> Post | None:
     #     return db.query(Post).filter(Post.username == username).first()
 
-    def add_post(self, db: Session, post: PostCreate, owner_id: int) -> Post:
+    def add_post(self, db: Session, post: PostAttrs, owner_id: int) -> Post:
         db_post = Post(
             type=post.type,
             price=post.price,
@@ -70,3 +61,20 @@ class PostRepo:
         db.commit()
         db.refresh(db_post)
         return db_post
+    def update_post(self, db: Session, post: PostAttrs, owned_id: int) -> Post | None:
+        current_post = self.get_post_by_id(db, owned_id)
+        if not current_post:
+            return None
+        current_post.type = post.type
+        current_post.price = post.price
+        current_post.address = post.address
+        current_post.area = post.area
+        current_post.rooms_count = post.rooms_count
+        current_post.description = post.description
+        db.commit()
+        db.refresh(current_post)
+        return current_post
+
+        
+        
+

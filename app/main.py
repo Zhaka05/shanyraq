@@ -6,7 +6,7 @@ from jose import jwt
 
 # repository
 from app.user_repository import UserRepo, UserCreate, User, UserUpdate
-from app.post_repository import PostRepo, PostCreate, Post
+from app.post_repository import PostRepo, PostAttrs
 
 #database
 from .database import Base, SessionLocal, engine
@@ -75,7 +75,7 @@ def patch_me(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
 ):
-    user_id = decode_access_token(token)
+    user_id = int(decode_access_token(token))
     users_repo.update_user_info(db, user_id, UserUpdate(phone=user_update.phone, name=user_update.name, city=user_update.city))
     return Response(status_code=200)
 
@@ -113,7 +113,7 @@ def post_announcement(
     token: str = Depends(oauth2_scheme),
 ):
     user_id = decode_access_token(token)
-    post_create = PostCreate(type=post_announcement.type, price=post_announcement.price, address=post_announcement.address, area=post_announcement.area, rooms_count=post_announcement.rooms_count, description=post_announcement.description)
+    post_create = PostAttrs(type=post_announcement.type, price=post_announcement.price, address=post_announcement.address, area=post_announcement.area, rooms_count=post_announcement.rooms_count, description=post_announcement.description)
     new_post = posts_repo.add_post(db, post_create, owner_id=int(user_id))
     return JSONResponse(content={"id": new_post.id}, status_code=200)
 
@@ -146,3 +146,20 @@ def get_announcement(
         description=post.description,
         owner_id=post.owner_id,
     )
+
+@app.patch("/shanyraks/{id}")
+def patch_announcement(
+    post_update: PostAnnouncementRequest,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    user_id = decode_access_token(token)
+    posts_repo.update_post(db, PostAttrs(
+        type=post_update.type,
+        price=post_update.price,
+        address=post_update.address,
+        area=post_update.area,
+        rooms_count=post_update.rooms_count,
+        description=post_update.description,
+        ), int(user_id))
+    return Response(status_code=200)

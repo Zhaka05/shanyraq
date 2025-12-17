@@ -37,7 +37,7 @@ class UserRepo:
     def get_user_by_id(self, db: Session, user_id: int) -> User:
         return db.query(User).filter(User.id == user_id).first()
     
-    def update_user_info(self, db: Session, user_id: int, user_info: UserUpdate) -> User:
+    def update_user_info(self, db: Session, user_id: int, user_info: UserUpdate) -> User | None:
         current_user = self.get_user_by_id(db, user_id=user_id)
         if not current_user:
             return None
