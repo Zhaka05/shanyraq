@@ -7,6 +7,7 @@ from jose import jwt
 # repository
 from app.user_repository import UserRepo, UserCreate, UserUpdate
 from app.post_repository import PostRepo, PostAttrs
+from app.comment_repository import CommentRepo, CommentAttrs
 
 #database
 from .database import Base, SessionLocal, engine
@@ -19,6 +20,7 @@ from sqlalchemy.orm import Session
 app = FastAPI()
 users_repo = UserRepo()
 posts_repo = PostRepo()
+comments_repo = CommentRepo()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/users/login")
 
@@ -49,7 +51,7 @@ class UserRequest(BaseModel):
 @app.post("/auth/users/")
 def post_user(user: UserRequest, db: Session = Depends(get_db)):
     users_repo.add_user(db, UserCreate(username=user.username, phone=user.phone, password=user.password, name=user.name, city=user.city))
-    return Response(status_code=202)
+    return Response(status_code=200)
     
 @app.post("/auth/users/login")
 def post_login_user(
@@ -181,3 +183,20 @@ def delete_announcement(
         return HTTPException(status_code=404, detail="Post is Not Deleted")
     return Response(status_code=200)
 
+class CommentRequest(BaseModel):
+    content: str
+
+@app.post("/shanyraks/{id}/comments")
+def create_comment(
+    id: int,
+    comment: CommentRequest,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    user_id = decode_access_token(token)
+    comment_create = CommentAttrs(
+        post_id=id,
+        content=comment.content,
+    )
+    comments_repo.add_comment(db, comment_create, int(user_id))
+    return Response(status_code=200)
