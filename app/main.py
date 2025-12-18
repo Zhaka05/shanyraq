@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from jose import jwt
 
 # repository
-from app.user_repository import UserRepo, UserCreate, User, UserUpdate
+from app.user_repository import UserRepo, UserCreate, UserUpdate
 from app.post_repository import PostRepo, PostAttrs
 
 #database
@@ -75,6 +75,7 @@ def patch_me(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
 ):
+
     user_id = int(decode_access_token(token))
     users_repo.update_user_info(db, user_id, UserUpdate(phone=user_update.phone, name=user_update.name, city=user_update.city))
     return Response(status_code=200)
@@ -95,6 +96,8 @@ def get_me(
 ):
     user_id = int(decode_access_token(token))
     user = users_repo.get_user_by_id(db, int(user_id))
+    if not user:
+        return HTTPException(status_code=404, detail="User Not Found")
     return UserGetResponse(id=user.id, username=user.username, phone=user.phone, password=user.password, name=user.name, city=user.city)
 
 class PostAnnouncementRequest(BaseModel):
@@ -131,7 +134,6 @@ class AnnouncementGetResponse(BaseModel):
 def get_announcement(
     id: int,
     db: Session = Depends(get_db),
-    token: str = Depends(oauth2_scheme),
 ):
     post = posts_repo.get_post_by_id(db, id)
     if not post:
@@ -149,12 +151,13 @@ def get_announcement(
 
 @app.patch("/shanyraks/{id}")
 def patch_announcement(
+    id: int,
     post_update: PostAnnouncementRequest,
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
 ):
     user_id = decode_access_token(token)
-    posts_repo.update_post(db, PostAttrs(
+    post_updated = posts_repo.update_post(db, id, PostAttrs(
         type=post_update.type,
         price=post_update.price,
         address=post_update.address,
@@ -162,4 +165,19 @@ def patch_announcement(
         rooms_count=post_update.rooms_count,
         description=post_update.description,
         ), int(user_id))
+    if not post_updated:
+        return HTTPException(status_code=404, detail="Not Found")
     return Response(status_code=200)
+
+@app.delete("/shanyraks/{id}")
+def delete_announcement(
+    id: int,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    user_id = decode_access_token(token)
+    status = posts_repo.delete_post(db, id, int(user_id))
+    if not status:
+        return HTTPException(status_code=404, detail="Post is Not Deleted")
+    return Response(status_code=200)
+

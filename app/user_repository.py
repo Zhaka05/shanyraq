@@ -16,6 +16,7 @@ class User(Base):
     city = Column(String)
     
     posts = relationship("Post", back_populates="owner")
+    comments = relationship("Comment", back_populates="owner")
 
 
 @define
@@ -34,7 +35,7 @@ class UserUpdate:
 
 
 class UserRepo:
-    def get_user_by_id(self, db: Session, user_id: int) -> User:
+    def get_user_by_id(self, db: Session, user_id: int) -> User | None:
         return db.query(User).filter(User.id == user_id).first()
     
     def update_user_info(self, db: Session, user_id: int, user_info: UserUpdate) -> User | None:

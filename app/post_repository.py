@@ -1,8 +1,7 @@
-from sqlalchemy import Column, Boolean, ForeignKey, Integer, String, Float
+from sqlalchemy import Column, Boolean, ForeignKey, Integer, String, Float, delete
 from sqlalchemy.orm import Session, relationship
 from attrs import define
 from .database import Base
-
 
 class Post(Base):
     __tablename__ = "posts"
@@ -17,6 +16,7 @@ class Post(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="posts")
+    comments = relationship("Comment", back_populates="post")
 
 
 @define
@@ -32,7 +32,8 @@ class PostAttrs:
 class PostRepo:
     def get_post_by_id(self, db: Session, post_id: int) -> Post:
         return db.query(Post).filter(Post.id == post_id).first()
-    
+    def get_post_by_id_for_owner(self, db: Session, post_id: int, owner_id: int) -> Post:
+        return db.query(Post).filter(Post.id == post_id, Post.owner_id == owner_id).first()
     # def update_user_info(self, db: Session, post_id: int, post_info: PostUpdate) -> Post:
     #     current_post = self.get_user_by_id(db, post_id=post_id)
     #     if not current_post:
@@ -61,8 +62,9 @@ class PostRepo:
         db.commit()
         db.refresh(db_post)
         return db_post
-    def update_post(self, db: Session, post: PostAttrs, owned_id: int) -> Post | None:
-        current_post = self.get_post_by_id(db, owned_id)
+    
+    def update_post(self, db: Session, post_id: int, post: PostAttrs, owned_id: int) -> Post | None:
+        current_post = self.get_post_by_id_for_owner(db, post_id, owned_id)
         if not current_post:
             return None
         current_post.type = post.type
@@ -74,7 +76,10 @@ class PostRepo:
         db.commit()
         db.refresh(current_post)
         return current_post
-
+    def delete_post(self, db: Session, post_id: int, owned_id: int) -> bool:
+        post = db.query(Post).filter(Post.id == post_id, Post.owner_id == owned_id).delete(synchronize_session=False)
+        db.commit()
+        return post == 1
         
         
 
