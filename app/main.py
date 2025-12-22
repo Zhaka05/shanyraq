@@ -200,3 +200,43 @@ def create_comment(
     )
     comments_repo.add_comment(db, comment_create, int(user_id))
     return Response(status_code=200)
+
+@app.get("/shanyraks/{id}/comments")
+def get_comments(
+    id: int,
+    db: Session = Depends(get_db),
+):
+    comments = comments_repo.get_all_comments_by_post_id(db, id)
+    return {"comments": comments if comments else "No Comments", "status_code": 200}
+
+
+@app.patch("/shanyraks/{id}/comments/{comment_id}")
+def patch_comment(
+    id: int,
+    comment_id: int,
+    comment: CommentRequest,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    user_id = decode_access_token(token)
+    comment_modify = CommentAttrs(
+        post_id=id,
+        content=comment.content,
+    )
+    modified_comment = comments_repo.modify_comment(db, comment_id, comment_modify, int(user_id))
+    if not modified_comment:
+        return HTTPException(status_code=404, detail="Comment Not Found or Cannot Change comment")
+    return Response(status_code=200)
+
+@app.delete("/shanyraks/{id}/comments/{comment_id}")
+def delete_comment(
+    id: int,
+    comment_id: int,
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+):
+    user_id = decode_access_token(token)
+    deleted_comment = comments_repo.delete_comment(db, comment_id, int(user_id), id)
+    if not deleted_comment:
+        return HTTPException(status_code=404, detail="Not Found or Not Owner")
+    return Response(status_code=200)
